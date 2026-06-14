@@ -1,0 +1,35 @@
+{
+  "name": "koc-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api,worker -c cyan,green,magenta \"npm run dev -w apps/web\" \"npm run dev -w apps/api\" \"npm run dev -w apps/worker\"",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "npm run dev -w apps/api",
+    "dev:worker": "npm run dev -w apps/worker",
+    "start": "npm run start:prod",
+    "start:prod": "tsx apps/api/src/production.ts",
+    "build": "npm run build -w apps/web",
+    "check": "npm run typecheck --workspaces --if-present",
+    "db:init": "node scripts/init-db.mjs",
+    "db:deploy": "node scripts/init-db.mjs",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "concurrently": "^9.1.2",
+    "prisma": "^6.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

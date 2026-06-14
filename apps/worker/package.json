@@ -1,0 +1,15 @@
+{
+  "name": "@koc-dashboard/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@koc-dashboard/ai": "*",
+    "@koc-dashboard/db": "*",
+    "@koc-dashboard/shared": "*"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@koc-dashboard/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@koc-dashboard/shared": "*",
+    "fastify": "^5.2.1"
+  }
+}
+

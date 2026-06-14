@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum KeywordSource {
+  user
+  default
+}
+
+enum FetchFrequency {
+  daily
+  every_2_days
+  weekly
+}
+
+enum Status {
+  pending
+  processing
+  done
+  failed
+}
+
+enum TranscriptSource {
+  youtube_caption
+  audio_transcription
+}
+
+enum Polarity {
+  positive
+  neutral
+  negative
+}
+
+enum Importance {
+  high
+  medium
+  low
+}
+
+enum SpeakerType {
+  koc_self
+  audience_or_community
+  unclear
+}
+
+enum JobType {
+  resolve_channel
+  sync_channel
+  analyze_video
+  generate_project_report
+}
+
+enum FetchTriggerType {
+  auto
+  manual
+}
+
+model Project {
+  id             String           @id @default(cuid())
+  productName    String           @map("product_name")
+  productContext String?          @map("product_context")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  keywords       ProjectKeyword[]
+  channels       KocChannel[]
+  videos         Video[]
+  feedbackItems  FeedbackItem[]
+  reports        ProductReport[]
+
+  @@map("projects")
+}
+
+model ProjectKeyword {
+  id        String        @id @default(cuid())
+  projectId String        @map("project_id")
+  keyword   String
+  source    KeywordSource
+  createdAt DateTime      @default(now()) @map("created_at")
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, keyword])
+  @@map("project_keywords")
+}
+
+model KocChannel {
+  id               String          @id @default(cuid())
+  projectId        String          @map("project_id")
+  channelUrl       String          @map("channel_url")
+  channelId        String?         @map("channel_id")
+  channelName      String?         @map("channel_name")
+  kocName          String?         @map("koc_name")
+  metadataStatus   Status          @default(pending) @map("metadata_status")
+  metadataError    String?         @map("metadata_error")
+  autoFetchEnabled Boolean         @default(false) @map("auto_fetch_enabled")
+  fetchFrequency   FetchFrequency? @map("fetch_frequency")
+  lastFetchedAt    DateTime?       @map("last_fetched_at")
+  nextFetchAt      DateTime?       @map("next_fetch_at")
+  lastFetchStatus  Status?         @map("last_fetch_status")
+  lastFetchError   String?         @map("last_fetch_error")
+  notes            String?
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  project          Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  videos           Video[]
+  fetchRuns        FetchRun[]
+
+  @@map("koc_channels")
+}
+
+model Video {
+  id                      String              @id @default(cuid())
+  projectId               String              @map("project_id")
+  kocChannelId            String              @map("koc_channel_id")
+  youtubeUrl              String              @map("youtube_url")
+  youtubeVideoId          String              @map("youtube_video_id")
+  title                   String
+  channelName             String?             @map("channel_name")
+  kocName                 String?             @map("koc_name")
+  publishedAt             DateTime?           @map("published_at")
+  durationSeconds         Int?                @map("duration_seconds")
+  transcriptStatus        Status              @default(pending) @map("transcript_status")
+  transcriptSource        TranscriptSource?   @map("transcript_source")
+  transcriptFailureReason String?             @map("transcript_failure_reason")
+  analysisStatus          Status              @default(pending) @map("analysis_status")
+  analysisFailureReason   String?             @map("analysis_failure_reason")
+  createdAt               DateTime            @default(now()) @map("created_at")
+  updatedAt               DateTime            @updatedAt @map("updated_at")
+  project                 Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kocChannel              KocChannel          @relation(fields: [kocChannelId], references: [id], onDelete: Cascade)
+  transcriptSegments      TranscriptSegment[]
+  feedbackItems           FeedbackItem[]
+
+  @@unique([projectId, youtubeVideoId])
+  @@map("videos")
+}
+
+model TranscriptSegment {
+  id               String             @id @default(cuid())
+  videoId          String             @map("video_id")
+  startTimeSeconds Float              @map("start_time_seconds")
+  endTimeSeconds   Float              @map("end_time_seconds")
+  text             String
+  sourceLanguage   String?            @map("source_language")
+  textZh           String?            @map("text_zh")
+  sourceType       TranscriptSource   @map("source_type")
+  isProductRelated Boolean            @default(false) @map("is_product_related")
+  relevanceReason  String?            @map("relevance_reason")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  video            Video              @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  evidenceLinks    FeedbackEvidence[]
+
+  @@map("transcript_segments")
+}
+
+model FeedbackItem {
+  id          String             @id @default(cuid())
+  projectId   String             @map("project_id")
+  videoId     String             @map("video_id")
+  polarity    Polarity
+  importance  Importance
+  summary     String
+  suggestion  String?
+  speakerType SpeakerType        @default(unclear) @map("speaker_type")
+  confidence  Float
+  createdAt   DateTime           @default(now()) @map("created_at")
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  video       Video              @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  evidence    FeedbackEvidence[]
+
+  @@map("feedback_items")
+}
+
+model FeedbackEvidence {
+  id                  String            @id @default(cuid())
+  feedbackItemId      String            @map("feedback_item_id")
+  transcriptSegmentId String            @map("transcript_segment_id")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  feedbackItem        FeedbackItem      @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+  transcriptSegment   TranscriptSegment @relation(fields: [transcriptSegmentId], references: [id], onDelete: Cascade)
+
+  @@unique([feedbackItemId, transcriptSegmentId])
+  @@map("feedback_evidence")
+}
+
+model ProductReport {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  reportScope String   @default("project") @map("report_scope")
+  reportText  String   @map("report_text")
+  generatedAt DateTime @default(now()) @map("generated_at")
+  version     Int      @default(1)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("product_reports")
+}
+
+model Job {
+  id           String    @id @default(cuid())
+  type         JobType
+  status       Status    @default(pending)
+  priority     Int       @default(0)
+  payloadJson  String    @map("payload_json")
+  errorMessage String?   @map("error_message")
+  runAfter     DateTime? @map("run_after")
+  startedAt    DateTime? @map("started_at")
+  finishedAt   DateTime? @map("finished_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("jobs")
+}
+
+model FetchRun {
+  id            String           @id @default(cuid())
+  kocChannelId  String           @map("koc_channel_id")
+  triggerType   FetchTriggerType @map("trigger_type")
+  status        Status           @default(processing)
+  videosFound   Int              @default(0) @map("videos_found")
+  videosEnqueued Int             @default(0) @map("videos_enqueued")
+  errorMessage  String?          @map("error_message")
+  startedAt     DateTime         @default(now()) @map("started_at")
+  finishedAt    DateTime?        @map("finished_at")
+  kocChannel    KocChannel       @relation(fields: [kocChannelId], references: [id], onDelete: Cascade)
+
+  @@map("fetch_runs")
+}
+
