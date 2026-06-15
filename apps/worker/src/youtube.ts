@@ -101,6 +101,7 @@ function withYtDlpRuntimeArgs(args: string[]): string[] {
   const runtimeArgs: string[] = [];
   const cookiesPath = process.env.YT_DLP_COOKIES_PATH?.trim();
   const jsRuntime = process.env.YT_DLP_JS_RUNTIME?.trim();
+  const remoteComponents = process.env.YT_DLP_REMOTE_COMPONENTS?.trim();
 
   if (cookiesPath) {
     runtimeArgs.push("--cookies", cookiesPath);
@@ -108,6 +109,10 @@ function withYtDlpRuntimeArgs(args: string[]): string[] {
 
   if (jsRuntime) {
     runtimeArgs.push("--js-runtimes", jsRuntime);
+  }
+
+  if (remoteComponents) {
+    runtimeArgs.push("--remote-components", remoteComponents);
   }
 
   return [...runtimeArgs, ...args];
