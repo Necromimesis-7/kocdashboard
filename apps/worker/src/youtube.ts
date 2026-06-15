@@ -84,16 +84,33 @@ async function runYtDlpJson(channelUrl: string, args: string[]): Promise<YtDlpPl
 
 export async function runYtDlpCommand(args: string[]): Promise<string> {
   const binary = process.env.YT_DLP_PATH ?? DEFAULT_YT_DLP_PATH;
+  const commandArgs = withYtDlpRuntimeArgs(args);
 
   try {
-    return await execYtDlp(binary, args);
+    return await execYtDlp(binary, commandArgs);
   } catch (error) {
     if (binary === DEFAULT_YT_DLP_PATH && isMissingExecutable(error)) {
-      return await execYtDlp("yt-dlp", args);
+      return await execYtDlp("yt-dlp", commandArgs);
     }
 
     throw error;
   }
+}
+
+function withYtDlpRuntimeArgs(args: string[]): string[] {
+  const runtimeArgs: string[] = [];
+  const cookiesPath = process.env.YT_DLP_COOKIES_PATH?.trim();
+  const jsRuntime = process.env.YT_DLP_JS_RUNTIME?.trim();
+
+  if (cookiesPath) {
+    runtimeArgs.push("--cookies", cookiesPath);
+  }
+
+  if (jsRuntime) {
+    runtimeArgs.push("--js-runtimes", jsRuntime);
+  }
+
+  return [...runtimeArgs, ...args];
 }
 
 async function execYtDlp(binary: string, args: string[]): Promise<string> {

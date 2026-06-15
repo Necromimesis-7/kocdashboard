@@ -46,6 +46,8 @@ AI_PROVIDER=leihuo
 LEIHUO_API_KEY=你的公司网关 key
 LEIHUO_TEXT_MODEL=gpt-5.4-mini
 YT_DLP_PATH=yt-dlp
+YT_DLP_COOKIES_PATH=/var/lib/kocdashboard/youtube-cookies.txt
+YT_DLP_JS_RUNTIME=node
 ```
 
 初始化数据库：
@@ -125,5 +127,6 @@ server {
 ## 注意事项
 
 - `DATA_ROOT` 必须放在服务器持久目录，不能放临时目录。
+- 如果 YouTube 在服务器上提示 `Sign in to confirm you’re not a bot`，需要用专门的 YouTube 小号导出 cookies，并上传到 `YT_DLP_COOKIES_PATH` 指向的位置，例如 `/var/lib/kocdashboard/youtube-cookies.txt`。cookies 文件是敏感凭据，只放服务器，不提交到 Git。
 - 当前架构适合 MVP 和分享会 demo。多人重度使用后再迁移 Postgres 和独立 worker。
 - 如果公司模型网关只允许内网访问，云服务器可能无法调用网关，系统会回退到本地规则分析。
