@@ -72,6 +72,7 @@ export function mapVideoSummary(video: {
     return acc;
   }, {});
   const primaryPolarity = Object.entries(polarityCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const relatedSegmentCount = video.transcriptSegments.filter((segment) => segment.isProductRelated).length;
 
   return {
     id: video.id,
@@ -83,9 +84,34 @@ export function mapVideoSummary(video: {
     analysisStatus: video.analysisStatus,
     analysisFailureReason: video.analysisFailureReason,
     primaryPolarity: primaryPolarity as VideoSummary["primaryPolarity"],
-    relatedSegmentCount: video.transcriptSegments.filter((segment) => segment.isProductRelated).length,
-    highImportanceCount: video.feedbackItems.filter((item) => item.importance === "high").length
+    relatedSegmentCount,
+    highImportanceCount: video.feedbackItems.filter((item) => item.importance === "high").length,
+    noFeedbackReason: buildNoFeedbackReason(video, relatedSegmentCount)
   };
+}
+
+function buildNoFeedbackReason(
+  video: {
+    transcriptStatus: "pending" | "processing" | "done" | "failed";
+    analysisStatus: "pending" | "processing" | "done" | "failed";
+    feedbackItems: unknown[];
+    transcriptSegments: unknown[];
+  },
+  relatedSegmentCount: number
+): string | null {
+  if (video.analysisStatus !== "done" || video.feedbackItems.length > 0) {
+    return null;
+  }
+
+  if (video.transcriptStatus === "done" && video.transcriptSegments.length === 0) {
+    return "已分析，但未获取到可用字幕片段。";
+  }
+
+  if (relatedSegmentCount === 0) {
+    return "已分析，但未检测到与当前项目明确相关的产品反馈。";
+  }
+
+  return "已检测到相关片段，但未形成可报告的明确反馈。";
 }
 
 export function mapFeedbackItem(item: {

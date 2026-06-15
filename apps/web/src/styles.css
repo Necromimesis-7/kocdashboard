@@ -848,6 +848,7 @@ h2 {
 
 .channel-name,
 .failure-text,
+.note-text,
 .muted-text {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -862,6 +863,10 @@ h2 {
 .failure-text,
 .job-error {
   color: #a53a31;
+}
+
+.note-text {
+  color: #5d6d76;
 }
 
 .muted-text {

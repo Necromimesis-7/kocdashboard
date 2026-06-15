@@ -27,6 +27,7 @@ export interface ExtractedFeedback {
 
 export interface AnalyzeTranscriptInput {
   productName: string;
+  videoTitle?: string;
   keywords: string[];
   segments: TranscriptAnalysisInputSegment[];
 }
@@ -368,6 +369,10 @@ const NEUTRAL_SIGNALS: LexiconSignal[] = [
     terms: ["gacha", "pull", "farming", "progression", "抽卡", "养成"]
   },
   {
+    label: "角色强度 / 平衡",
+    terms: ["buff", "nerf", "tier", "rank him", "rank her", "rank them", "mains", "main players"]
+  },
+  {
     label: "版本内容",
     terms: ["update", "patch", "mode", "quest", "版本", "模式", "任务"]
   }
@@ -469,6 +474,23 @@ function deriveFeedbackSignal(text: string): DerivedFeedbackSignal | null {
       suggestion: "保留目标奖励带来的即时正反馈，同时继续观察重复奖励和非目标结果的挫败感。",
       evidenceSummary: "KOC 在抽到目标武器或期待刀类奖励时表示这是好结果。",
       confidence: 0.66,
+      reportable: true
+    };
+  }
+
+  if (
+    containsAny(lower, ["buff", "nerf", "tier", "rank him", "rank her", "rank them", "mains", "main players"]) &&
+    !containsAny(lower, ["youtube", "subscribe", "comment down below who you"])
+  ) {
+    return {
+      polarity: "neutral",
+      importance: "low",
+      topic: "角色强度 / 平衡",
+      viewpoint: "KOC 对角色调整后的强度定位进行观察，认为该角色仍需结合梯度和实战表现判断价值。",
+      scenario: "角色加强、削弱、强度梯度评价或角色玩家体验讨论。",
+      suggestion: "将该角色的胜率、出场率、段位分布和 KOC 主观评价合并观察，判断本次平衡调整是否达到预期。",
+      evidenceSummary: "KOC 提到角色获得加强、玩家群体或梯度评价，说明该片段涉及角色强度与平衡观察。",
+      confidence: 0.64,
       reportable: true
     };
   }
@@ -998,8 +1020,9 @@ async function extractAiOutputText(response: Response, apiStyle: "responses" | "
 
 function buildOpenAiAnalysisPrompt(input: AnalyzeTranscriptInput): string {
   return JSON.stringify({
-    task: "请分析 YouTube KOC 视频字幕片段，输出 JSON。必须保留每个片段原文，提供中文翻译，并提炼 positive/neutral/negative 反馈。只输出与指定产品或关键词明确相关的内容；跳过寒暄、订阅引导、普通口头语和无法判断产品含义的片段。feedback.summary 必须是具体中文观点，写清问题/称赞点/观察点，不要写“KOC 对内容体验给出反馈”这类模板句；suggestion 必须是中文、可执行、面向产品团队。英文原文只保留在 segment.text。",
+    task: "请分析 YouTube KOC 视频字幕片段，输出 JSON。必须保留每个片段原文，提供中文翻译，并提炼 positive/neutral/negative 反馈。结合 videoTitle 判断视频是否真的在讨论指定产品；如果标题和字幕明显讨论其它游戏/产品，不要产出反馈。只输出与指定产品或关键词明确相关的内容；跳过寒暄、订阅引导、普通口头语和无法判断产品含义的片段。角色 buff/nerf、tier/rank、强度梯度、角色玩家体验属于有效产品观察，即使语气中性也要输出 neutral feedback。feedback.summary 必须是具体中文观点，写清问题/称赞点/观察点，不要写“KOC 对内容体验给出反馈”这类模板句；suggestion 必须是中文、可执行、面向产品团队。英文原文只保留在 segment.text。",
     productName: input.productName,
+    videoTitle: input.videoTitle ?? "",
     keywords: input.keywords,
     outputSchema: {
       segments: [
@@ -1059,11 +1082,12 @@ function normalizeOpenAiResult(raw: unknown, input: AnalyzeTranscriptInput): Ana
   const fallback = analyzeTranscriptWithRules(input);
   const segments = fallback.segments.map((segment) => {
     const update = segmentUpdateById.get(segment.id);
+    const isProductRelated = segment.isProductRelated || update?.isProductRelated === true;
     return {
       ...segment,
       textZh: update?.textZh?.trim() || segment.textZh,
-      isProductRelated: update?.isProductRelated ?? segment.isProductRelated,
-      relevanceReason: update?.relevanceReason ?? segment.relevanceReason
+      isProductRelated,
+      relevanceReason: isProductRelated ? (update?.relevanceReason ?? segment.relevanceReason) : null
     };
   });
 

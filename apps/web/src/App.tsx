@@ -939,25 +939,31 @@ function OverviewTab(props: {
             <span>倾向</span>
             <span>片段</span>
             <span>高优先级</span>
-            <span>失败原因</span>
+            <span>失败 / 说明</span>
           </div>
-          {filteredVideos.map((videoItem) => (
-            <div className="data-row" key={videoItem.id}>
-              <span className="video-title">
-                <Video size={16} />
-                {videoItem.title}
-              </span>
-              <span>{videoItem.channelName}</span>
-              <span className={`status ${videoItem.analysisStatus}`}>
-                <Clock3 size={14} />
-                {statusLabel(videoItem.analysisStatus)}
-              </span>
-              <span>{polarityLabel(videoItem.primaryPolarity)}</span>
-              <span>{videoItem.relatedSegmentCount}</span>
-              <span>{videoItem.highImportanceCount}</span>
-              <span className={videoFailureReason(videoItem) ? "failure-text" : "muted-text"}>{videoFailureReason(videoItem) ?? "无"}</span>
-            </div>
-          ))}
+          {filteredVideos.map((videoItem) => {
+            const failureReason = videoFailureReason(videoItem);
+            const statusNote = failureReason ?? videoItem.noFeedbackReason;
+            return (
+              <div className="data-row" key={videoItem.id}>
+                <span className="video-title">
+                  <Video size={16} />
+                  {videoItem.title}
+                </span>
+                <span>{videoItem.channelName}</span>
+                <span className={`status ${videoItem.analysisStatus}`}>
+                  <Clock3 size={14} />
+                  {statusLabel(videoItem.analysisStatus)}
+                </span>
+                <span>{polarityLabel(videoItem.primaryPolarity)}</span>
+                <span>{videoItem.relatedSegmentCount}</span>
+                <span>{videoItem.highImportanceCount}</span>
+                <span className={failureReason ? "failure-text" : statusNote ? "note-text" : "muted-text"}>
+                  {statusNote ?? "无"}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </section>
 

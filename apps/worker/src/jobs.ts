@@ -433,6 +433,7 @@ async function processAnalyzeVideoJob(payloadJson: string): Promise<void> {
     transcriptSource = transcript.source;
     const analysis = await analyzeTranscript({
       productName: video.project.productName,
+      videoTitle: video.title,
       keywords: video.project.keywords.map((keyword) => keyword.keyword),
       segments: transcript.segments
     });

@@ -70,6 +70,7 @@ export interface VideoSummary {
   primaryPolarity: Polarity | null;
   relatedSegmentCount: number;
   highImportanceCount: number;
+  noFeedbackReason: string | null;
 }
 
 export interface FeedbackItem {
